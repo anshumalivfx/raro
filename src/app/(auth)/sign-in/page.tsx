@@ -27,8 +27,8 @@ import { Loader2 } from "lucide-react";
 import { signInSchema } from "@/schemas/signInSchema";
 
 const Page = () => {
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
+  // const [identifier, setIdentifier] = useState("");
+  // const [password, setPassword] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<z.infer<typeof signInSchema>>({
@@ -41,24 +41,31 @@ const Page = () => {
   const { toast } = useToast();
   const router = useRouter();
   const onSubmit = async (data: z.infer<typeof signInSchema>) => {
+    setIsSubmitting(true);
     const result = await signIn("credentials", {
       redirect: false,
       identifier: data.identifier,
       password: data.password,
     });
     if (result?.error) {
-      toast({
-        title: "Login Failed",
-        description: "Incorrect Username or Password",
-        variant: "destructive",
-      });
+      setIsSubmitting(false);
+      if (result.error == "CredentialsSignin") {
+        toast({
+          title: "Login Failed",
+          description: "Incorrect Username or Password",
+          variant: "destructive",
+        });
+      }
     }
     if (result?.url) {
+      setIsSubmitting(false);
       router.replace("/dashboard");
     } else {
+      setIsSubmitting(false);
       toast({
-        title: "Success",
-        description: "Successfully Logged In",
+        title: "Error",
+        description: result?.error ?? "Unknown Error",
+        variant: "destructive",
       });
     }
   };
@@ -77,9 +84,9 @@ const Page = () => {
               name="identifier"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email/Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="Email" {...field} />
+                    <Input placeholder="Email/Username" {...field} />
                   </FormControl>
 
                   <FormMessage />
@@ -100,7 +107,15 @@ const Page = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit">Submit</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please Wait
+                </>
+              ) : (
+                "Login"
+              )}
+            </Button>
           </form>
         </Form>
       </div>
